@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тихая минута — карманный гид по микро-паузам</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1EBDE;
+    --paper-2:#E9E2CF;
+    --ink:#23201A;
+    --ink-soft:#6E6659;
+    --line:rgba(35,32,26,.16);
+    --accent:#B4541F;
+    --deep:#131A14;
+    --ivory:#EDE5D2;
+    --ivory-soft:#A8A392;
+    --line-l:rgba(237,229,210,.16);
+    --brass:#D6A44E;
+    --ease:cubic-bezier(.22,.61,.2,1);
+    --serif:'Cormorant',serif;          /* «рукописный» — не трогаем */
+    --sans:'Open Sans',system-ui,sans-serif;
+    --mono:'Open Sans',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  /* фиксированный скролл: страница прилипает к началам глав */
+  html{scroll-behavior:smooth;scroll-snap-type:y proximity}
+  body{background:var(--paper);color:var(--ink);font:400 17px/1.75 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  ::selection{background:var(--accent);color:var(--paper)}
+  .mono{font-family:var(--mono)}
+  .container{max-width:1200px;margin:0 auto;padding-inline:clamp(20px,5vw,64px)}
+
+  /* ---------- фактура бумаги и служебные слои ---------- */
+  .noise{position:fixed;inset:0;z-index:450;pointer-events:none;opacity:.05;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.6"/></svg>')}
+  .progress{position:fixed;top:0;left:0;height:2px;width:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;z-index:150}
+  .toasts{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:500;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+  .toast{background:var(--ink);color:var(--paper);font:500 14px/1.5 var(--sans);letter-spacing:.02em;padding:14px 24px;border-radius:999px;opacity:0;transform:translateY(14px);transition:.4s var(--ease);max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:none}
+
+  /* ---------- курсор ---------- */
+  #cursor{position:fixed;left:0;top:0;z-index:600;pointer-events:none;mix-blend-mode:difference}
+  .cursor-ring{position:absolute;left:-23px;top:-23px;width:46px;height:46px;border:1.5px solid #fff;border-radius:50%;transform:scale(.22);opacity:0;transition:transform .35s var(--ease),opacity .35s}
+  .cursor-dot{position:absolute;left:-3px;top:-3px;width:6px;height:6px;background:#fff;border-radius:50%;transition:opacity .3s}
+  #cursor.on .cursor-ring{opacity:1}
+  #cursor.hov .cursor-ring{transform:scale(1)}
+  #cursor.hov .cursor-dot{opacity:0}
+  @media (pointer:coarse){#cursor{display:none}}
+
+  /* ---------- боковая навигация ---------- */
+  .side-nav{position:fixed;left:26px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:18px}
+  .nav-dot{position:relative;background:none;border:0;cursor:pointer;padding:4px;display:block}
+  .nav-dot .dot{display:block;width:7px;height:7px;border-radius:50%;background:var(--ink-soft);opacity:.55;transition:.35s}
+  .nav-dot .nav-label{position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);white-space:nowrap;font:600 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);opacity:0;transition:.35s;pointer-events:none}
+  .nav-dot:hover .nav-label,.nav-dot.act .nav-label{opacity:1}
+  .nav-dot.act .dot{background:var(--accent);opacity:1;transform:scale(1.6)}
+  .nav-dot.act .nav-label{color:var(--accent)}
+  .side-nav.on-dark .dot{background:var(--ivory)}
+  .side-nav.on-dark .nav-label{color:var(--ivory-soft)}
+  .side-nav.on-dark .nav-dot.act .dot{background:var(--brass)}
+  .side-nav.on-dark .nav-dot.act .nav-label{color:var(--brass)}
+  @media (max-width:1080px){.side-nav{display:none}}
+
+  /* ---------- общие блоки: каждая глава — полный экран ---------- */
+  .section{position:relative;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(70px,10vh,130px) 0;scroll-snap-align:start}
+  .sheet{border-radius:40px 40px 0 0;margin-top:-40px}
+  .sheet-dark{background:var(--deep);color:var(--ivory);box-shadow:0 -18px 50px rgba(15,20,12,.28)}
+  .sheet-light{background:var(--paper-2);box-shadow:0 -14px 40px rgba(35,32,26,.10)}
+  .sheet-paper{background:var(--paper);box-shadow:0 -14px 40px rgba(35,32,26,.10)}
+  .kicker{font:600 13px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
+  .sheet-dark .kicker{color:var(--brass)}
+  .lead{font-size:18px;color:var(--ink-soft);max-width:540px}
+  .sheet-dark .lead{color:var(--ivory-soft)}
+  .chapter-head{display:flex;align-items:flex-end;gap:clamp(18px,3vw,34px);margin-bottom:clamp(44px,6vh,70px)}
+  .chapter-num{font:500 clamp(4.6rem,12vw,9.5rem)/0.75 var(--serif);color:transparent;-webkit-text-stroke:1px rgba(35,32,26,.34)}
+  .sheet-dark .chapter-num{-webkit-text-stroke:1px rgba(237,229,210,.3)}
+  .chapter-title{font:500 clamp(2rem,4.4vw,3.4rem)/1.08 var(--serif);letter-spacing:-.01em}
+
+  /* reveal-анимации */
+  [data-reveal]{opacity:0;transform:translateY(30px);transition:opacity .9s ease,transform .9s var(--ease);transition-delay:var(--d,0s)}
+  [data-reveal].in{opacity:1;transform:none}
+  [data-split] .w{display:inline-block;overflow:hidden;padding-bottom:.12em;margin-bottom:-.12em}
+  [data-split] .wi{display:inline-block;transform:translateY(112%);transition:transform .9s var(--ease);transition-delay:calc(var(--i)*.055s)}
+  [data-split].in .wi{transform:none}
+
+  /* ---------- кнопки ---------- */
+  .btn{display:inline-flex;align-items:center;gap:12px;font:600 13.5px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:16px 30px;border-radius:999px;border:1px solid var(--ink);color:var(--ink);background:transparent;cursor:pointer;text-decoration:none;transition:background .35s,color .35s,border-color .35s,transform .35s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn svg{width:14px;height:14px;display:block}
+  .btn-solid{background:var(--ink);color:var(--paper)}
+  .btn-solid:hover{background:var(--accent);border-color:var(--accent)}
+  .btn-light{border-color:rgba(237,229,210,.4);color:var(--ivory)}
+  .btn-light:hover{border-color:var(--ivory);background:rgba(237,229,210,.07)}
+  .btn-light.on{border-color:var(--brass);color:var(--brass)}
+  .btn-solid-light{background:var(--ivory);color:var(--deep);border-color:var(--ivory)}
+  .btn-solid-light:hover{background:var(--brass);border-color:var(--brass)}
+  .btn-sm{padding:12px 20px;font-size:12px}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;overflow:hidden;scroll-snap-align:start}
+  #heroCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .hero-inner{position:relative;z-index:2;width:100%;padding-top:80px;padding-bottom:120px}
+  .hero-copy{max-width:660px}
+  .hero-title{font:500 clamp(3.6rem,11vw,8.6rem)/0.95 var(--serif);letter-spacing:-.02em;margin:22px 0 10px}
+  .hero-title .line{display:block;overflow:hidden;padding-bottom:.14em;margin-bottom:-.14em}
+  .hero-title .li{display:block;transform:translateY(130%);animation:lineUp 1.1s var(--ease) forwards;animation-delay:var(--d,0s)}
+  .hero-title .line:nth-child(2){margin-left:clamp(1.5rem,7vw,6.5rem)}
+  .hero-title .em{font-style:italic;color:var(--accent)}
+  @keyframes lineUp{to{transform:none}}
+  .hero-note{font:400 13.5px/1.7 var(--sans);letter-spacing:.05em;color:var(--ink-soft);margin:16px 0 28px}
+  .hero-lead{font-size:clamp(17px,1.5vw,20px);color:var(--ink-soft);max-width:490px;margin-bottom:40px}
+  .hero-cta{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .e{opacity:0;transform:translateY(26px);animation:enter 1s var(--ease) forwards;animation-delay:var(--d,0s)}
+  @keyframes enter{to{opacity:1;transform:none}}
+  .scroll-hint{position:absolute;bottom:56px;left:clamp(20px,5vw,64px);display:flex;align-items:flex-end;gap:14px;z-index:2}
+  .scroll-hint span{font:600 12px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+  .scroll-hint .track{width:1px;height:52px;background:var(--line);overflow:hidden;position:relative}
+  .scroll-hint .track i{position:absolute;left:0;top:-60%;width:1px;height:60%;background:var(--ink);animation:drop 2.3s ease-in-out infinite}
+  @keyframes drop{0%{top:-60%}75%,100%{top:110%}}
+  @media (max-width:760px){#heroCanvas{opacity:.55}}
+
+  /* ---------- главы с текстом (светлые и тёмные) ---------- */
+  .chapter-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:clamp(36px,6vw,80px)}
+  .chapter-text p{margin-bottom:1.4em;max-width:58ch;color:var(--ink-soft)}
+  .chapter-text p:first-child::first-letter{font:500 3.4em/0.85 var(--serif);float:left;padding:6px 12px 0 0;color:var(--accent)}
+  .sheet-dark .chapter-text p{color:var(--ivory-soft)}
+  .sheet-dark .chapter-text p:first-child::first-letter{color:var(--brass)}
+  .chapter-quote{border-left:2px solid var(--accent);padding-left:26px;margin-top:clamp(20px,8vh,90px)}
+  .chapter-quote blockquote{font:500 clamp(1.5rem,2.6vw,2.1rem)/1.3 var(--serif);font-style:italic}
+  .chapter-quote cite{display:block;font:500 13.5px/1.5 var(--sans);letter-spacing:.06em;font-style:normal;color:var(--ink-soft);margin-top:18px}
+  .sheet-dark .chapter-quote{border-left-color:var(--brass)}
+  .sheet-dark .chapter-quote cite{color:var(--ivory-soft)}
+  .fact{display:flex;align-items:flex-end;gap:clamp(20px,4vw,44px);flex-wrap:wrap;border-top:1px solid var(--line);margin-top:clamp(56px,9vh,96px);padding-top:42px}
+  .fact-value{font:500 clamp(4rem,10vw,7.5rem)/0.9 var(--serif);color:var(--accent)}
+  .fact-side{max-width:440px;padding-bottom:8px}
+  .fact-side p{color:var(--ink-soft);font-size:16px}
+  .sheet-dark .fact{border-top-color:var(--line-l)}
+  .sheet-dark .fact-value{color:var(--brass)}
+  .sheet-dark .fact-side p{color:var(--ivory-soft)}
+  @media (max-width:900px){.chapter-grid{grid-template-columns:1fr}.chapter-quote{margin-top:0}}
+
+  /* три якоря (глава 3) */
+  .anchors{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(22px,3vw,44px);margin-top:clamp(48px,8vh,84px)}
+  .anchor{border-top:1px solid var(--line-l);padding-top:24px}
+  .anchor-time{font:600 13px/1 var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--brass)}
+  .anchor-title{font:500 clamp(1.3rem,2vw,1.6rem)/1.2 var(--serif);margin:12px 0 10px}
+  .anchor-text{font-size:15.5px;line-height:1.7;color:var(--ivory-soft)}
+  @media (max-width:820px){.anchors{grid-template-columns:1fr;gap:26px}}
+
+  /* ---------- дыхательный тренажёр: единая сцена ---------- */
+  .breath-stage{width:100%;max-width:560px;margin:24px auto 0;display:flex;flex-direction:column}
+  .breath-visual{position:relative;width:100%;max-width:440px;aspect-ratio:1;margin:0 auto}
+  #breathCanvas{position:absolute;inset:0;width:100%;height:100%}
+  .breath-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
+  .breath-phase{font:600 14px var(--sans);letter-spacing:.3em;text-transform:uppercase;color:var(--brass)}
+  .breath-count{font:600 clamp(3rem,8vw,4.8rem)/1 var(--serif);color:var(--ivory);min-height:1em}
+  .swap{animation:phaseIn .6s var(--ease)}
+  @keyframes phaseIn{from{opacity:0;transform:translateY(10px)}}
+
+  /* плитки ритмов */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:30px}
+  .tile{position:relative;aspect-ratio:1;border:1px solid var(--line-l);border-radius:16px;background:none;cursor:pointer;color:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:8px;transition:border-color .3s,background .3s,transform .3s}
+  .tile:hover{border-color:rgba(237,229,210,.4);transform:translateY(-2px)}
+  .tile.act{border-color:var(--brass);background:rgba(237,229,210,.05)}
+  .tile-name{font:600 15px var(--sans)}
+  .tile-pattern{font:600 13px var(--sans);letter-spacing:.06em;color:var(--brass)}
+  .tile-dots{display:flex;gap:3px;align-items:flex-end;height:12px}
+  .tile-dots i{width:4px;border-radius:2px;background:var(--brass)}
+  .rec-dot{position:absolute;top:10px;right:10px;width:5px;height:5px;border-radius:50%;background:var(--brass);box-shadow:0 0 0 3px rgba(214,164,78,.18)}
+  @media (max-width:620px){.tiles{grid-template-columns:repeat(2,1fr)}}
+
+  /* свой ритм: ползунки */
+  .custom-rhythm{display:none;border:1px dashed var(--line-l);border-radius:14px;padding:16px 18px 8px;margin-top:12px}
+  .custom-rhythm.act{display:block}
+  .range-row{display:grid;grid-template-columns:100px 1fr 48px;align-items:center;gap:12px;margin-bottom:10px}
+  .range-label{font:600 12.5px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ivory-soft)}
+  .range-val{font:600 14px var(--sans);color:var(--brass);text-align:right}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line-l);border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--brass);margin-top:-6px;border:none;transition:transform .2s}
+  input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.2)}
+  input[type=range]::-moz-range-track{height:2px;background:var(--line-l)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--brass);border:none}
+
+  .breath-controls{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:24px}
+  .breath-controls + .breath-controls{margin-top:10px}
+  #breathToggle{min-width:160px;justify-content:center}
+  .breath-stats{display:flex;justify-content:center;gap:48px;margin-top:28px;font:600 13px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ivory-soft)}
+  .breath-stats b{display:block;font:500 24px/1.3 var(--serif);color:var(--ivory);letter-spacing:0;text-align:center}
+
+  /* журнал тишины */
+  .journal{margin-top:30px;border-top:1px solid var(--line-l);padding-top:18px}
+  .journal-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .journal-title{font:600 12.5px var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--ivory-soft)}
+  .journal-total{font:600 14px var(--sans);color:var(--brass)}
+  .journal-strip{display:flex;gap:8px;align-items:flex-end}
+  .j-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .j-bar{width:100%;max-width:40px;height:3px;background:rgba(237,229,210,.16);border-radius:3px 3px 0 0;transition:height .5s var(--ease),background .3s}
+  .j-day.today .j-bar{background:var(--brass)}
+  .j-lab{font:600 11.5px var(--sans);letter-spacing:.08em;color:var(--ivory-soft)}
+  .j-day.today .j-lab{color:var(--brass)}
+  .breath-tip{margin:48px auto 0;font-size:14px;line-height:1.8;color:var(--ivory-soft);max-width:560px;text-align:center}
+  @media (max-width:960px){.breath-grid{grid-template-columns:1fr}}
+  @media (max-height:800px){
+    .breath-visual{max-width:360px}
+    .breath-stage{max-width:500px}
+    .tiles{margin-top:22px}
+    .journal{margin-top:22px}
+  }
+
+  /* ---------- практики ---------- */
+  .practice-list{border-bottom:1px solid var(--line)}
+  .practice{border-top:1px solid var(--line)}
+  .practice-head{display:grid;grid-template-columns:56px 1fr auto 28px;gap:18px;align-items:center;width:100%;background:none;border:0;cursor:pointer;padding:26px 0;text-align:left;color:var(--ink)}
+  .p-num{font:500 italic 1.8rem/1 var(--serif);color:var(--ink-soft);transition:color .3s}
+  .p-title{font:600 clamp(1.1rem,2.2vw,1.45rem)/1.3 var(--sans)}
+  .p-time{font:600 12px var(--sans);letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:7px 14px;color:var(--ink-soft);white-space:nowrap}
+  .p-plus{position:relative;width:16px;height:16px;justify-self:end}
+  .p-plus::before,.p-plus::after{content:'';position:absolute;left:0;top:7px;width:16px;height:1.5px;background:var(--ink);transition:transform .4s var(--ease)}
+  .p-plus::after{transform:rotate(90deg)}
+  .practice.open .p-plus::after{transform:rotate(0deg)}
+  .practice-head:hover .p-num,.practice.open .p-num{color:var(--accent)}
+  .practice-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--ease)}
+  .practice.open .practice-body{grid-template-rows:1fr}
+  .practice-body-in{overflow:hidden}
+  .practice-body-in p{max-width:620px;color:var(--ink-soft);padding:0 0 30px 74px;font-size:16px}
+  @media (max-width:700px){
+    .practice-head{grid-template-columns:36px 1fr auto 20px;gap:12px}
+    .p-num{font-size:1.3rem}
+    .practice-body-in p{padding-left:0}
+  }
+
+  /* ---------- чек-лист ---------- */
+  .check-progress{display:flex;align-items:center;gap:18px;margin:44px 0 10px}
+  .check-bar{flex:1;height:2px;background:var(--line);position:relative}
+  .check-bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent);transition:width .6s var(--ease)}
+  .check-progress .mono{font:600 12.5px var(--sans);letter-spacing:.1em;color:var(--ink-soft)}
+  .check-row{display:flex;align-items:flex-start;gap:18px;width:100%;background:none;border:0;border-bottom:1px dashed var(--line);cursor:pointer;padding:19px 0;text-align:left;color:var(--ink)}
+  .checkbox{flex:none;width:22px;height:22px;border:1.5px solid var(--ink-soft);border-radius:5px;position:relative;margin-top:3px;transition:background .3s,border-color .3s}
+  .checkbox svg{position:absolute;inset:2px;width:16px;height:16px}
+  .checkbox svg path{stroke:var(--paper);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .45s var(--ease)}
+  .check-row.checked .checkbox{background:var(--ink);border-color:var(--ink)}
+  .check-row.checked .checkbox svg path{stroke-dashoffset:0}
+  .check-num{flex:none;font:600 12px/2 var(--sans);letter-spacing:.06em;color:var(--ink-soft);width:24px}
+  .check-label{font-weight:500;transition:color .3s}
+  .check-row.checked .check-label{color:var(--ink-soft)}
+  .check-foot{display:flex;justify-content:flex-end;margin-top:26px}
+  .btn-ghost{border-color:var(--line);color:var(--ink-soft)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-ghost.armed{border-color:var(--accent);color:var(--accent);background:rgba(180,84,31,.06)}
+
+  /* ---------- финал ---------- */
+  .final{text-align:center;padding:clamp(80px,14vh,150px) 0 clamp(60px,9vh,100px)}
+  .final-quote{font:500 italic clamp(1.9rem,4.6vw,3.4rem)/1.25 var(--serif);max-width:820px;margin:0 auto 40px}
+  .footer{border-top:1px solid var(--line-l);padding-top:32px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font:400 13px/1.8 var(--sans);letter-spacing:.03em;color:var(--ivory-soft)}
+  .footer .disclaimer{max-width:460px;text-align:right}
+  @media (max-width:700px){.footer .disclaimer{text-align:left}}
+
+  /* ---------- дзен-режим ---------- */
+  .zen{position:fixed;inset:0;z-index:400;background:#0A0E0B;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .7s ease,visibility .7s}
+  .zen.open{opacity:1;visibility:visible}
+  .zen-wrap{position:relative;width:min(76vmin,540px);aspect-ratio:1}
+  #zenCanvas{position:absolute;inset:0;width:100%;height:100%}
+  .zen-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none}
+  .zen-phase{font:600 15px var(--sans);letter-spacing:.32em;text-transform:uppercase;color:var(--brass)}
+  .zen-count{font:600 clamp(2.4rem,7vmin,3.8rem)/1 var(--serif);color:var(--ivory);min-height:1em}
+  .zen-hint{position:absolute;top:28px;left:0;right:0;text-align:center;font:400 12px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:rgba(237,229,210,.4);padding:0 20px}
+  .zen-controls{position:absolute;bottom:32px;left:0;right:0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 16px}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="progress" id="progress"></div>
+<div id="cursor"><span class="cursor-ring"></span><span class="cursor-dot"></span></div>
+<div class="toasts" id="toasts"></div>
+<nav class="side-nav" id="sideNav" aria-label="Разделы страницы"></nav>
+
+<div id="app"></div>
+
+<script>
+/* ================================================================
+   НАПОЛНЕНИЕ — все тексты сайта живут здесь.
+   Чтобы «дотянуть контент», правьте только этот объект.
+   ================================================================ */
+const SITE = {
+  hero: {
+    kicker: "карманный гид · выпуск 01",
+    titleA: "Тихая",
+    titleB: "минута",
+    /* строчка под заголовком выбирается по времени суток */
+    notes: {
+      morning: "— утро: один ровный вдох, пока заваривается чай",
+      day:     "— день: квадрат дыхания между двумя встречами",
+      evening: "— вечер: выдох длиннее всего прожитого дня",
+      night:   "— поздний час: 4–7–8 и экран подальше"
+    },
+    lead: "О маленьких паузах среди шумного дня: как находить их, чем наполнять и почему длинный выдох работает лучше третьей чашки кофе.",
+    ctaPrimary: "Попробовать минуту"
+  },
+
+  chapter1: {
+    num: "01",
+    kicker: "глава первая",
+    title: "Зачем мы теряем дыхание",
+    paragraphs: [
+      "День собирается из мелких переходов: между письмом и звонком, между задачей и дорогой домой. Именно в этих швах обычно и теряется дыхание — оно становится коротким и верхним, а вместе с ним уходит внимание.",
+      "Хорошая новость в том, что дыхание — двусторонняя дверь. Состояние влияет на дыхание, но и дыхание влияет на состояние: протяжный выдох — самый простой способ сказать телу, что спешить некуда.",
+      "Этот гид — о паузах, которые не требуют коврика, приложения и свободного часа. Только минута, немного любопытства — и круг, с которым можно дышать в такт."
+    ],
+    quote: "Пауза — это тоже действие.",
+    quoteAuthor: "правило тихой минуты",
+    fact: { value: "≈ 6", text: "вдохов в минуту — неторопливый темп, к которому сходится дыхание спокойного человека. Всё, что нужно для начала, — не торопить его, а чуть придержать." }
+  },
+
+  breath: {
+    kicker: "интерактив",
+    title: "Минута на пробу",
+    lead: "Выберите ритм и дышите вместе с кругом. Экран можно не смотреть — счёт, мягкий звук и дождь подскажут, когда вдохнуть и выдохнуть.",
+    tip: "Совет: не старайтесь «дышать правильно» — позвольте кругу задавать темп. Каждый пройденный цикл сам собой попадает в журнал тишины.",
+    techniques: [
+      { name: "Ровное", desc: "вдох четыре счёта, выдох шесть. Самый мягкий старт.",
+        phases: [{t:"in",d:4},{t:"out",d:6}] },
+      { name: "Квадрат", desc: "равные фазы: вдох, задержка, выдох, пауза.",
+        phases: [{t:"in",d:4},{t:"hold",d:4},{t:"out",d:4},{t:"rest",d:4}] },
+      { name: "«4–7–8»", desc: "длинная задержка и протяжный выдох. Практика на вечер.",
+        phases: [{t:"in",d:4},{t:"hold",d:7},{t:"out",d:8}] }
+    ],
+    custom: { name: "Свой ритм", desc: "четыре ползунка под ваше дыхание; ноль убирает фазу из цикла" },
+    ui: { start: "старт", pause: "пауза", resume: "продолжить", reset: "сброс",
+          zen: "дзен-режим", exitZen: "выйти",
+          soundOn: "звук · вкл", soundOff: "звук · выкл",
+          rainOn: "дождь · вкл", rainOff: "дождь · выкл",
+          cycles: "циклов", time: "в практике", ready: "готовы?",
+          journalTitle: "тишина за неделю", journalToast: "Минута записана в журнал тишины",
+          zenHint: "пробел — пауза · s — звук · r — дождь · esc — выход" },
+    phaseNames: { in: "вдох", hold: "задержка", out: "выдох", rest: "пауза" }
+  },
+
+  practices: {
+    num: "02",
+    kicker: "глава вторая",
+    title: "Практики на каждый день",
+    lead: "Пять микро-пауз, для которых не нужно специальное время — только намерение. Разверните любую.",
+    items: [
+      { title: "Мостик между делами", time: "1 мин",
+        desc: "Прежде чем сменить занятие, сделайте три медленных вдоха и выдоха. Это ставит маленькую точку в конце одного дела — и чистый лист перед следующим." },
+      { title: "Кофе с вниманием", time: "4 мин",
+        desc: "Выпейте напиток без телефона и книжки: только вкус, тепло чашки и звук вокруг. Внимание, как и мышцы, тренируется на маленьких весах." },
+      { title: "Пауза на лестнице", time: "30 сек",
+        desc: "Перед подъёмом выровняйте спину и сделайте один глубокий выдох — так, чтобы плечи опустились. Дальше — как обычно, но уже чуть иначе." },
+      { title: "Вечерний выдох", time: "2 мин",
+        desc: "Лягте, положите руку на живот и сделайте десять дыханий так, чтобы поднималась именно рука. Простой способ передать телу: день закончился." },
+      { title: "Вдох перед ответом", time: "5 сек",
+        desc: "Получили резкое сообщение? Один спокойный вдох до того, как отвечать. Пауза длиной в пять секунд спасала немало писем." }
+    ]
+  },
+
+  checklist: {
+    kicker: "интерактив",
+    title: "Неделя без спешки",
+    lead: "Отметьте то, что удалось. Прогресс сохраняется в этом браузере — можно закрывать страницу и возвращаться.",
+    items: [
+      "Утро без телефона — первые десять минут",
+      "Одна прогулка без наушников",
+      "Пауза перед каждым согласием «да»",
+      "Три минуты у окна в обед",
+      "Чай или кофе без экрана — хотя бы раз",
+      "Выдох длиннее вдоха — раз в час",
+      "Пять минут тишины перед сном"
+    ],
+    reset: "начать неделю заново",
+    resetConfirm: "точно сбросить?"
+  },
+
+  after: {
+    num: "03",
+    kicker: "глава третья",
+    title: "Как тишина становится привычкой",
+    paragraphs: [
+      "Пауза не требует силы воли — она требует якоря. Дисциплина быстро истощается, а вот привязка к тому, что уже происходит каждый день, работает сама: чашка утреннего кофе, красный сигнал светофора, звук закрывающейся за вами двери.",
+      "Начинайте смешно мало. Одна минута — уже практика; три вдоха — уже практика. Мозг не сопротивляется маленькому, а маленькое, повторённое сотню раз, становится фоном жизни — как чистка зубов, о которой никто специально не «вспоминает».",
+      "И последнее: пропуск — не провал. Исследования привычек сходятся в одном: сбойный день не отменяет прогресса; отменяет его только вывод «у меня не получается». Журнал тишины на этой странице — как раз про это: столбики растут, даже когда идут неровно."
+    ],
+    quote: "Мы — то, что мы делаем постоянно. Совершенство — не действие, а привычка.",
+    quoteAuthor: "Аристотель — в пересказе историка Уилла Дюранта",
+    fact: { value: "≈ 66", text: "дней в среднем нужно, чтобы новое действие стало автоматическим — к такому выводу пришли исследователи Университетского колледжа Лондона. Разброс, правда, большой: от 18 до 254 дней, так что сравнивать себя с другими здесь бессмысленно." },
+    anchors: [
+      { time: "утро", title: "Своя минута раньше телефона",
+        text: "Пока заваривается чай — один ровный цикл дыхания. День открывается с вашего темпа, а не с ленты уведомлений." },
+      { time: "день", title: "Выдох на переключении",
+        text: "Закончившийся звонок, сохранённый файл, закрытая вкладка — любое из этого может стать сигналом: три спокойных выдоха." },
+      { time: "вечер", title: "Церемония выключения",
+        text: "Десять дыханий 4–7–8 при приглушённом свете — простой способ передать телу: день сдан, можно отпускать." }
+    ],
+    finalQuote: "Начните с одного вдоха — остальное приложится.",
+    finalCta: "вернуться к кругу"
+  },
+
+  footer: {
+    left: "Тихая минута · v0.4",
+    disclaimer: "Материал носит просветительский характер и не заменяет консультацию специалиста."
+  }
+};
+
+/* ================= служебное ================= */
+const TAU = Math.PI * 2;
+const lerp = (a, b, p) => a + (b - a) * p;
+const easeInOutSine = p => -(Math.cos(Math.PI * p) - 1) / 2;
+const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
+
+const ICONS = {
+  arrow: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8h12M9 3.5 13.5 8 9 12.5"/></svg>',
+  play:  '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 2.8v10.4L13 8z"/></svg>',
+  pause: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3h2.4v10H4.5zM9.1 3h2.4v10H9.1z"/></svg>'
+};
+
+function dayPart() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'morning';
+  if (h < 17) return 'day';
+  if (h < 23) return 'evening';
+  return 'night';
+}
+function heroNote() {
+  const n = SITE.hero.notes;
+  return (n && n[dayPart()]) || '';
+}
+
+/* ================= сборка страницы ================= */
+function renderHero() {
+  const s = el('section', 'hero'); s.id = 'hero';
+  s.innerHTML = `
+    <canvas id="heroCanvas"></canvas>
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="kicker e" style="--d:.1s">${SITE.hero.kicker}</p>
+        <h1 class="hero-title">
+          <span class="line"><span class="li" style="--d:.25s">${SITE.hero.titleA}</span></span>
+          <span class="line"><span class="li em" style="--d:.4s">${SITE.hero.titleB}</span></span>
+        </h1>
+        <p class="hero-note e" style="--d:.65s">${heroNote()}</p>
+        <p class="hero-lead e" style="--d:.75s">${SITE.hero.lead}</p>
+        <div class="hero-cta e" style="--d:.9s">
+          <a class="btn btn-solid" href="#breath">${SITE.hero.ctaPrimary} ${ICONS.arrow}</a>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint e" style="--d:1.1s"><span>листайте</span><div class="track"><i></i></div></div>`;
+  return s;
+}
+
+function renderWhy() {
+  const c = SITE.chapter1;
+  const s = el('section', 'section'); s.id = 'why';
+  s.innerHTML = `
+    <div class="container">
+      <header class="chapter-head" data-reveal>
+        <span class="chapter-num">${c.num}</span>
+        <div>
+          <p class="kicker">${c.kicker}</p>
+          <h2 class="chapter-title" data-split>${c.title}</h2>
+        </div>
+      </header>
+      <div class="chapter-grid">
+        <div class="chapter-text">
+          ${c.paragraphs.map((p, i) => `<p data-reveal style="--d:${i * 0.08}s">${p}</p>`).join('')}
+        </div>
+        <aside class="chapter-quote" data-reveal style="--d:.15s">
+          <blockquote>«${c.quote}»</blockquote>
+          <cite>— ${c.quoteAuthor}</cite>
+        </aside>
+      </div>
+      <div class="fact" data-reveal>
+        <div class="fact-value">${c.fact.value}</div>
+        <div class="fact-side"><p>${c.fact.text}</p></div>
+      </div>
+    </div>`;
+  return s;
+}
+
+function renderBreath() {
+  const b = SITE.breath;
+  const s = el('section', 'section sheet sheet-dark'); s.id = 'breath';
+  s.innerHTML = `
+    <div class="container">
+      <header class="chapter-head" data-reveal>
+        <span class="chapter-num">◦</span>
+        <div>
+          <p class="kicker">${b.kicker}</p>
+          <h2 class="chapter-title" data-split>${b.title}</h2>
+          <p class="lead" style="margin-top:18px">${b.lead}</p>
+        </div>
+      </header>
+      <div class="breath-stage" data-reveal>
+        <div class="breath-visual">
+          <canvas id="breathCanvas"></canvas>
+          <div class="breath-center">
+            <p class="breath-phase" id="breathPhase" aria-live="polite">${b.ui.ready}</p>
+            <p class="breath-count" id="breathCount"></p>
+          </div>
+        </div>
+        <div class="tiles" id="techList"></div>
+        <div class="custom-rhythm" id="customPanel"></div>
+        <div class="breath-controls">
+          <button class="btn btn-solid-light" id="breathToggle"></button>
+          <button class="btn btn-light" id="zenBtn">${b.ui.zen}</button>
+        </div>
+        <div class="breath-controls">
+          <button class="btn btn-light btn-sm" id="soundBtn"></button>
+          <button class="btn btn-light btn-sm" id="rainBtn"></button>
+          <button class="btn btn-light btn-sm" id="breathReset">${b.ui.reset}</button>
+        </div>
+        <div class="breath-stats">
+          <span>${b.ui.cycles}<b id="breathCycles">0</b></span>
+          <span>${b.ui.time}<b id="breathTime">0:00</b></span>
+        </div>
+        <div class="journal">
+          <div class="journal-head">
+            <span class="journal-title">${b.ui.journalTitle}</span>
+            <span class="journal-total" id="journalTotal">0 мин</span>
+          </div>
+          <div class="journal-strip" id="journalStrip"></div>
+        </div>
+      </div>
+      <p class="breath-tip" data-reveal>${b.tip}</p>
+    </div>`;
+  return s;
+}
+
+function renderPractices() {
+  const p = SITE.practices;
+  const s = el('section', 'section sheet sheet-light'); s.id = 'practices';
+  s.innerHTML = `
+    <div class="container">
+      <header class="chapter-head" data-reveal>
+        <span class="chapter-num">${p.num}</span>
+        <div>
+          <p class="kicker">${p.kicker}</p>
+          <h2 class="chapter-title" data-split>${p.title}</h2>
+          <p class="lead" style="margin-top:18px">${p.lead}</p>
+        </div>
+      </header>
+      <div class="practice-list" data-reveal>
+        ${p.items.map((it, i) => `
+          <article class="practice">
+            <button class="practice-head" type="button">
+              <span class="p-num">${String(i + 1).padStart(2, '0')}</span>
+              <span class="p-title">${it.title}</span>
+              <span class="p-time">${it.time}</span>
+              <span class="p-plus"></span>
+            </button>
+            <div class="practice-body"><div class="practice-body-in"><p>${it.desc}</p></div></div>
+          </article>`).join('')}
+      </div>
+    </div>`;
+  return s;
+}
+
+function renderChecklist() {
+  const c = SITE.checklist;
+  const s = el('section', 'section sheet sheet-paper'); s.id = 'checklist';
+  s.innerHTML = `
+    <div class="container">
+      <header class="chapter-head" data-reveal>
+        <span class="chapter-num">✓</span>
+        <div>
+          <p class="kicker">${c.kicker}</p>
+          <h2 class="chapter-title" data-split>${c.title}</h2>
+          <p class="lead" style="margin-top:18px">${c.lead}</p>
+        </div>
+      </header>
+      <div data-reveal>
+        <div class="check-progress">
+          <div class="check-bar"><i id="checkFill"></i></div>
+          <span class="mono" id="checkCount">0 / 0</span>
+        </div>
+        <div id="checkList">
+          ${c.items.map((it, i) => `
+            <button class="check-row" type="button" data-i="${i}">
+              <span class="checkbox"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+              <span class="check-num">${String(i + 1).padStart(2, '0')}</span>
+              <span class="check-label">${it}</span>
+            </button>`).join('')}
+        </div>
+        <div class="check-foot">
+          <button class="btn btn-ghost btn-sm" id="checkReset">${c.reset}</button>
+        </div>
+      </div>
+    </div>`;
+  return s;
+}
+
+function renderAfter() {
+  const a = SITE.after;
+  const s = el('section', 'section sheet sheet-dark'); s.id = 'after';
+  s.innerHTML = `
+    <div class="container">
+      <header class="chapter-head" data-reveal>
+        <span class="chapter-num">${a.num}</span>
+        <div>
+          <p class="kicker">${a.kicker}</p>
+          <h2 class="chapter-title" data-split>${a.title}</h2>
+        </div>
+      </header>
+      <div class="chapter-grid">
+        <div class="chapter-text">
+          ${a.paragraphs.map((p, i) => `<p data-reveal style="--d:${i * 0.08}s">${p}</p>`).join('')}
+        </div>
+        <aside class="chapter-quote" data-reveal style="--d:.15s">
+          <blockquote>«${a.quote}»</blockquote>
+          <cite>— ${a.quoteAuthor}</cite>
+        </aside>
+      </div>
+      <div class="fact" data-reveal>
+        <div class="fact-value">${a.fact.value}</div>
+        <div class="fact-side"><p>${a.fact.text}</p></div>
+      </div>
+      <div class="anchors" data-reveal>
+        ${a.anchors.map(an => `
+          <div class="anchor">
+            <p class="anchor-time">${an.time}</p>
+            <h3 class="anchor-title">${an.title}</h3>
+            <p class="anchor-text">${an.text}</p>
+          </div>`).join('')}
+      </div>
+      <div class="final" data-reveal>
+        <p class="final-quote" data-split>${a.finalQuote}</p>
+        <a class="btn btn-solid-light" href="#breath">${a.finalCta} ${ICONS.arrow}</a>
+      </div>
+      <footer class="footer">
+        <span>${SITE.footer.left}</span>
+        <span class="disclaimer">${SITE.footer.disclaimer}</span>
+      </footer>
+    </div>`;
+  return s;
+}
+
+function renderZen() {
+  const z = el('div', 'zen'); z.id = 'zen';
+  z.innerHTML = `
+    <p class="zen-hint">${SITE.breath.ui.zenHint}</p>
+    <div class="zen-wrap">
+      <canvas id="zenCanvas"></canvas>
+      <div class="zen-center">
+        <p class="zen-phase" id="zenPhase" aria-live="polite"></p>
+        <p class="zen-count" id="zenCount"></p>
+      </div>
+    </div>
+    <div class="zen-controls">
+      <button class="btn btn-light btn-sm" id="zenSound"></button>
+      <button class="btn btn-light btn-sm" id="zenRain"></button>
+      <button class="btn btn-light btn-sm" id="zenToggle"></button>
+      <button class="btn btn-light btn-sm" id="zenExit">${SITE.breath.ui.exitZen}</button>
+    </div>`;
+  return z;
+}
+
+document.getElementById('app').append(
+  renderHero(), renderWhy(), renderBreath(),
+  renderPractices(), renderChecklist(), renderAfter(), renderZen()
+);
+
+/* ================= тосты ================= */
+function toast(msg) {
+  const box = document.getElementById('toasts');
+  const t = el('div', 'toast', msg);
+  box.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 450); }, 2800);
+}
+
+/* ================= появление при скролле ================= */
+function splitWords(node) {
+  const words = node.textContent.trim().split(/\s+/);
+  node.textContent = '';
+  words.forEach((word, i) => {
+    const w = el('span', 'w'), wi = el('span', 'wi', word);
+    wi.style.setProperty('--i', i);
+    w.appendChild(wi); node.appendChild(w);
+    node.appendChild(document.createTextNode(' '));
+  });
+}
+function initReveal() {
+  const io = new IntersectionObserver(es => {
+    es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold: .16 });
+  document.querySelectorAll('[data-reveal],[data-split]').forEach(n => {
+    if (n.hasAttribute('data-split')) splitWords(n);
+    io.observe(n);
+  });
+}
+
+/* ================= боковая навигация ================= */
+const NAV = [
+  { id: 'hero', label: 'начало' },
+  { id: 'why', label: '01 · зачем' },
+  { id: 'breath', label: 'дыхание' },
+  { id: 'practices', label: '02 · практики' },
+  { id: 'checklist', label: 'неделя' },
+  { id: 'after', label: '03 · привычка' }
+];
+function initNav() {
+  const nav = document.getElementById('sideNav');
+  const items = NAV.map(n => {
+    const b = el('button', 'nav-dot');
+    b.setAttribute('aria-label', n.label);
+    b.innerHTML = `<span class="nav-label">${n.label}</span><span class="dot"></span>`;
+    b.addEventListener('click', () => document.getElementById(n.id).scrollIntoView({ behavior: 'smooth' }));
+    nav.appendChild(b);
+    return { b, id: n.id };
+  });
+  const dark = ['breath', 'after'];
+  const io = new IntersectionObserver(es => {
+    es.forEach(en => {
+      if (!en.isIntersecting) return;
+      items.forEach(it => it.b.classList.toggle('act', it.id === en.target.id));
+      nav.classList.toggle('on-dark', dark.includes(en.target.id));
+    });
+  }, { rootMargin: '-45% 0px -45% 0px' });
+  items.forEach(it => io.observe(document.getElementById(it.id)));
+}
+
+/* ================= прогресс чтения ================= */
+function initProgress() {
+  const bar = document.getElementById('progress');
+  const upd = () => {
+    const h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = `scaleX(${h > 0 ? scrollY / h : 0})`;
+  };
+  addEventListener('scroll', upd, { passive: true }); upd();
+}
+
+/* ================= курсор ================= */
+function initCursor() {
+  const c = document.getElementById('cursor');
+  let x = innerWidth / 2, y = innerHeight / 2, tx = x, ty = y, on = false;
+  addEventListener('mousemove', e => {
+    tx = e.clientX; ty = e.clientY;
+    if (!on) { on = true; c.classList.add('on'); }
+  });
+  document.addEventListener('mouseover', e => {
+    c.classList.toggle('hov', !!e.target.closest('a,button'));
+  });
+  (function loop() {
+    x += (tx - x) * .22; y += (ty - y) * .22;
+    c.style.transform = `translate(${x}px,${y}px)`;
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* ================= canvas: часы-минута в hero ================= */
+function initHeroCanvas() {
+  const cv = document.getElementById('heroCanvas'), ctx = cv.getContext('2d');
+  let w = 0, h = 0, visible = true;
+  const resize = () => {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    w = cv.clientWidth; h = cv.clientHeight;
+    cv.width = w * dpr; cv.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  resize(); addEventListener('resize', resize);
+  new IntersectionObserver(es => visible = es[0].isIntersecting).observe(cv);
+  const INK = a => `rgba(35,32,26,${a})`;
+  function draw(t) {
+    ctx.clearRect(0, 0, w, h);
+    const wide = w > 860;
+    const cx = wide ? w * .74 : w * .5;
+    const cy = h * .5 + (wide ? scrollY * .06 : 0);
+    const R = Math.min(w, h) * (wide ? .40 : .32);
+    if (R <= 10) return;
+    const rot = t * .00004;
+    for (let i = 0; i < 60; i++) {
+      const a = rot + i / 60 * TAU - Math.PI / 2;
+      const len = i % 5 === 0 ? 10 : 5;
+      ctx.strokeStyle = INK(i % 5 === 0 ? .38 : .16);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+      ctx.lineTo(cx + Math.cos(a) * (R + len), cy + Math.sin(a) * (R + len));
+      ctx.stroke();
+    }
+    ctx.strokeStyle = INK(.3);
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+    ctx.save();
+    ctx.setLineDash([2, 7]); ctx.lineDashOffset = -t * .008;
+    ctx.strokeStyle = INK(.28);
+    ctx.beginPath(); ctx.arc(cx, cy, R * .86, 0, TAU); ctx.stroke();
+    ctx.restore();
+    const br = R * .6 * (1 + .05 * Math.sin(t / 3600));
+    ctx.fillStyle = 'rgba(180,84,31,.07)';
+    ctx.beginPath(); ctx.arc(cx, cy, br, 0, TAU); ctx.fill();
+    ctx.strokeStyle = INK(.72); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(cx, cy, br, 0, TAU); ctx.stroke();
+    const sa = (t / 60000 % 1) * TAU - Math.PI / 2;
+    ctx.fillStyle = '#B4541F';
+    ctx.beginPath(); ctx.arc(cx + Math.cos(sa) * R, cy + Math.sin(sa) * R, 4, 0, TAU); ctx.fill();
+    for (let k = 0; k < 2; k++) {
+      const a = t * .0001 * (k ? -1.6 : 1) + k * 2.4;
+      ctx.fillStyle = INK(.5);
+      ctx.beginPath(); ctx.arc(cx + Math.cos(a) * R * .86, cy + Math.sin(a) * R * .86, 2.5, 0, TAU); ctx.fill();
+    }
+  }
+  (function frame(t) { if (visible && !document.hidden) draw(t); requestAnimationFrame(frame); })(0);
+}
+
+/* ================= дыхательный тренажёр ================= */
+function initBreath() {
+  const B = SITE.breath;
+  const mainCv = document.getElementById('breathCanvas');
+  const zenCv = document.getElementById('zenCanvas');
+  const techList = document.getElementById('techList');
+  const customPanel = document.getElementById('customPanel');
+  const cyclesEl = document.getElementById('breathCycles');
+  const timeEl = document.getElementById('breathTime');
+  const btnMain = document.getElementById('breathToggle');
+  const btnZen = document.getElementById('zenToggle');
+  const zenEl = document.getElementById('zen');
+  const KEYS = { custom: 'quiet-minute.custom', journal: 'quiet-minute.journal', sound: 'quiet-minute.sound', rain: 'quiet-minute.rain' };
+
+  /* --- состояние --- */
+  let techIdx = 0, running = false, started = false;
+  let phaseIdx = 0, phaseElapsed = 0, cycles = 0, elapsed = 0;
+  let lastCount = null, lastTime = null, zenOpen = false, mainVisible = true;
+
+  let soundOn = false;
+  try { soundOn = localStorage.getItem(KEYS.sound) === '1'; } catch (e) {}
+  let rainOn = false;
+  try { rainOn = localStorage.getItem(KEYS.rain) === '1'; } catch (e) {}
+
+  let custom = [4, 0, 6, 0];
+  try {
+    const s = JSON.parse(localStorage.getItem(KEYS.custom));
+    if (Array.isArray(s) && s.length === 4) custom = s.map(n => Math.min(10, Math.max(0, Math.round(+n || 0))));
+  } catch (e) {}
+  const saveCustom = () => { try { localStorage.setItem(KEYS.custom, JSON.stringify(custom)); } catch (e) {} };
+
+  const PHASE_KEYS = ['in', 'hold', 'out', 'rest'];
+  const phasesOf = i => {
+    if (i < B.techniques.length) return B.techniques[i].phases;
+    const arr = [];
+    custom.forEach((d, k) => { if (d > 0) arr.push({ t: PHASE_KEYS[k], d }); });
+    return arr.length ? arr : [{ t: 'in', d: 4 }, { t: 'out', d: 6 }];
+  };
+  let phases = phasesOf(techIdx);
+  const cycleTotal = () => phases.reduce((s, p) => s + p.d, 0);
+
+  /* --- аудио: колокольчики фаз + синтезированный дождь --- */
+  const AEng = (() => {
+    let ctx = null;
+    const ensure = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    const chime = (f, dur, vol) => {
+      if (!soundOn) return;
+      try {
+        const c = ensure(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(vol, t + .025);
+        g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+        o.connect(g); g.connect(c.destination);
+        o.start(t); o.stop(t + dur + .05);
+      } catch (e) {}
+    };
+    let rain = null;
+    function rainStart() {
+      if (rain) return;
+      try {
+        const c = ensure();
+        const master = c.createGain();
+        master.gain.value = 0;
+        master.connect(c.destination);
+        const len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        const layer = (rate, type, freq, q, vol) => {
+          const s = c.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate;
+          const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+          const g = c.createGain(); g.gain.value = vol;
+          s.connect(f); f.connect(g); g.connect(master); s.start();
+          return s;
+        };
+        const srcs = [
+          layer(1,    'lowpass',  380, .4, .55),
+          layer(1.31, 'bandpass', 1900, .5, .22),
+          layer(1.83, 'bandpass', 4200, .7, .06)
+        ];
+        const pan = c.createStereoPanner ? c.createStereoPanner() : null;
+        if (pan) pan.connect(master);
+        const drop = () => {
+          const o = c.createOscillator(), g = c.createGain(), t = c.currentTime, f0 = 1200 + Math.random() * 2200;
+          if (pan) pan.pan.setValueAtTime(Math.random() * 1.6 - .8, t);
+          o.type = 'sine';
+          o.frequency.setValueAtTime(f0, t);
+          o.frequency.exponentialRampToValueAtTime(Math.max(260, f0 * .42), t + .08);
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(.035 + Math.random() * .05, t + .005);
+          g.gain.exponentialRampToValueAtTime(.0001, t + .11);
+          o.connect(g); g.connect(pan || master);
+          o.start(t); o.stop(t + .13);
+        };
+        const t0 = c.currentTime;
+        master.gain.setValueAtTime(0, t0);
+        master.gain.linearRampToValueAtTime(.4, t0 + 1.4);
+        const st = { master, srcs, timers: [], dead: false };
+        const loop = () => {
+          if (st.dead) return;
+          drop();
+          if (Math.random() < .3) st.timers.push(setTimeout(drop, 25 + Math.random() * 70));
+          st.timers.push(setTimeout(loop, 80 + Math.random() * 420));
+        };
+        const gust = () => {
+          if (st.dead) return;
+          const t = c.currentTime;
+          st.master.gain.cancelScheduledValues(t);
+          st.master.gain.setTargetAtTime(.28 + Math.random() * .3, t, 3);
+          st.timers.push(setTimeout(gust, 3500 + Math.random() * 6500));
+        };
+        loop(); gust();
+        rain = st;
+      } catch (e) {}
+    }
+    function rainStop() {
+      if (!rain) return;
+      const st = rain; rain = null; st.dead = true;
+      st.timers.forEach(clearTimeout);
+      try {
+        const t = ctx.currentTime;
+        st.master.gain.cancelScheduledValues(t);
+        st.master.gain.setTargetAtTime(0, t, .5);
+        setTimeout(() => {
+          st.srcs.forEach(s => { try { s.stop(); } catch (e) {} });
+          try { st.master.disconnect(); } catch (e) {}
+        }, 1800);
+      } catch (e) {}
+    }
+    return { chime, rainStart, rainStop, get rainOn() { return !!rain; } };
+  })();
+
+  const PHASE_SND = { in: () => AEng.chime(523.25, 1.4, .14), hold: () => AEng.chime(440, .9, .09),
+                      out: () => AEng.chime(392, 1.6, .13), rest: () => AEng.chime(329.63, .9, .08) };
+  const cue = t => {
+    PHASE_SND[t] && PHASE_SND[t]();
+    if (!soundOn) { try { navigator.vibrate && navigator.vibrate(16); } catch (e) {} }
+  };
+  function syncAmbience() { if (rainOn && !AEng.rainOn) AEng.rainStart(); }
+
+  /* --- представления (canvas): основной + дзен --- */
+  const views = [];
+  function addView(cv) {
+    const v = { cv, ctx: cv.getContext('2d'), w: 0, h: 0, visible: true };
+    v.resize = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      v.w = cv.clientWidth; v.h = cv.clientHeight;
+      cv.width = Math.max(1, v.w * dpr); cv.height = Math.max(1, v.h * dpr);
+      v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    v.resize();
+    addEventListener('resize', v.resize);
+    new IntersectionObserver(es => v.visible = es[0].isIntersecting).observe(cv);
+    views.push(v);
+    return v;
+  }
+  addView(mainCv); addView(zenCv);
+  new IntersectionObserver(es => mainVisible = es[0].isIntersecting).observe(mainCv);
+
+  /* --- текстовые пары (основной + дзен) --- */
+  const pairs = [
+    { ph: document.getElementById('breathPhase'), ct: document.getElementById('breathCount') },
+    { ph: document.getElementById('zenPhase'), ct: document.getElementById('zenCount') }
+  ];
+  function setPhaseText(txt) {
+    pairs.forEach(p => { p.ph.textContent = txt; p.ph.classList.remove('swap'); });
+    void document.body.offsetWidth;
+    pairs.forEach(p => p.ph.classList.add('swap'));
+  }
+  /* пустой счётчик больше не держит место — надпись «готовы?» стоит точно в центре */
+  function setCount(n) {
+    const s = n == null ? '' : String(n);
+    pairs.forEach(p => {
+      if (p.ct.textContent !== s) p.ct.textContent = s;
+      p.ct.style.display = s ? '' : 'none';
+    });
+  }
+
+  /* --- кнопки --- */
+  function paintToggle() {
+    const lab = running ? B.ui.pause : (started ? B.ui.resume : B.ui.start);
+    const html = `${ICONS[running ? 'pause' : 'play']}<span>${lab}</span>`;
+    btnMain.innerHTML = html; btnZen.innerHTML = html;
+  }
+  const sndBtns = [document.getElementById('soundBtn'), document.getElementById('zenSound')];
+  const rainBtns = [document.getElementById('rainBtn'), document.getElementById('zenRain')];
+  function paintSound() {
+    sndBtns.forEach(b => {
+      b.textContent = soundOn ? B.ui.soundOn : B.ui.soundOff;
+      b.classList.toggle('on', soundOn);
+    });
+  }
+  function paintRain() {
+    rainBtns.forEach(b => {
+      b.textContent = rainOn ? B.ui.rainOn : B.ui.rainOff;
+      b.classList.toggle('on', rainOn);
+    });
+  }
+  function toggleSound() {
+    soundOn = !soundOn;
+    try { localStorage.setItem(KEYS.sound, soundOn ? '1' : '0'); } catch (e) {}
+    paintSound();
+    if (soundOn) AEng.chime(523.25, 1.4, .14);
+    syncAmbience();
+  }
+  function toggleRain() {
+    rainOn = !rainOn;
+    try { localStorage.setItem(KEYS.rain, rainOn ? '1' : '0'); } catch (e) {}
+    if (rainOn) AEng.rainStart(); else AEng.rainStop();
+    paintRain();
+  }
+
+  /* --- сессия --- */
+  function resetSession() {
+    running = false; started = false;
+    phaseIdx = 0; phaseElapsed = 0; cycles = 0; elapsed = 0; lastCount = null;
+    cyclesEl.textContent = '0'; timeEl.textContent = '0:00';
+    setCount(null);
+    setPhaseText(B.ui.ready);
+    paintToggle();
+  }
+  function startPause() {
+    if (running) { running = false; }
+    else {
+      running = true;
+      if (!started) { started = true; setPhaseText(B.phaseNames[phases[0].t]); cue(phases[0].t); }
+      syncAmbience();
+    }
+    paintToggle();
+  }
+
+  /* --- плитки ритмов --- */
+  const bars = phs => {
+    const max = Math.max(1, ...phs.map(p => p.d));
+    return PHASE_KEYS.map(k => {
+      const p = phs.find(x => x.t === k), d = p ? p.d : 0;
+      return `<i style="height:${d ? Math.max(3, Math.round(d / max * 11)) : 2}px;opacity:${d ? 1 : .22}"></i>`;
+    }).join('');
+  };
+  const recIdx = dayPart() === 'morning' ? 0 : dayPart() === 'day' ? 1 : 2;
+  B.techniques.forEach((t, i) => {
+    const b = el('button', 'tile' + (i === recIdx ? ' rec' : ''));
+    b.type = 'button'; b.dataset.i = i;
+    if (i === recIdx) b.title = 'подходит сейчас';
+    b.innerHTML = `
+      ${i === recIdx ? '<span class="rec-dot"></span>' : ''}
+      <span class="tile-dots">${bars(t.phases)}</span>
+      <span class="tile-name">${t.name}</span>
+      <span class="tile-pattern">${t.phases.map(p => p.d).join('·')}</span>`;
+    b.addEventListener('click', () => selectTech(i));
+    techList.appendChild(b);
+  });
+  const customTile = el('button', 'tile');
+  customTile.type = 'button'; customTile.dataset.i = 3;
+  customTile.innerHTML = `
+    <span class="tile-dots" id="customBars"></span>
+    <span class="tile-name">${B.custom.name}</span>
+    <span class="tile-pattern" id="customPattern"></span>`;
+  customTile.addEventListener('click', () => selectTech(3));
+  techList.appendChild(customTile);
+
+  /* ползунки своего ритма */
+  [['вдох', 0], ['задержка', 1], ['выдох', 2], ['пауза', 3]].forEach(([lab, i]) => {
+    const row = el('label', 'range-row');
+    row.innerHTML = `<span class="range-label">${lab}</span><input type="range" min="0" max="10" step="1" value="${custom[i]}" aria-label="${lab}"><span class="range-val"></span>`;
+    const inp = row.querySelector('input'), val = row.querySelector('.range-val');
+    const show = v => val.textContent = v ? v + ' с' : '—';
+    show(custom[i]);
+    inp.addEventListener('input', () => {
+      custom[i] = +inp.value; show(custom[i]); saveCustom();
+      if (techIdx === 3) {
+        phases = phasesOf(3);
+        if (phaseIdx >= phases.length) { phaseIdx = 0; phaseElapsed = 0; setPhaseText(B.phaseNames[phases[0].t]); }
+        updateCustomTile();
+      }
+    });
+    customPanel.appendChild(row);
+  });
+  function updateCustomTile() {
+    const phs = phasesOf(3);
+    const p = document.getElementById('customPattern'), bEl = document.getElementById('customBars');
+    if (p) p.textContent = phs.map(x => x.d).join('·');
+    if (bEl) bEl.innerHTML = bars(phs);
+  }
+  function selectTech(i) {
+    techIdx = i; phases = phasesOf(i);
+    techList.querySelectorAll('.tile').forEach(b => b.classList.toggle('act', +b.dataset.i === i));
+    customPanel.classList.toggle('act', i === 3);
+    updateCustomTile();
+    resetSession();
+  }
+  selectTech(recIdx);
+
+  /* --- журнал тишины --- */
+  let journal = {};
+  try { journal = JSON.parse(localStorage.getItem(KEYS.journal)) || {}; } catch (e) {}
+  const dayKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  function journalAdd(sec) {
+    const k = dayKey(new Date());
+    journal[k] = (journal[k] || 0) + sec;
+    try { localStorage.setItem(KEYS.journal, JSON.stringify(journal)); } catch (e) {}
+    paintJournal();
+  }
+  function paintJournal() {
+    const strip = document.getElementById('journalStrip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    const days = []; let max = 1;
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 864e5);
+      const sec = journal[dayKey(d)] || 0;
+      days.push({ d, sec });
+      if (sec > max) max = sec;
+    }
+    const tk = dayKey(new Date());
+    let total = 0;
+    days.forEach(({ d, sec }) => {
+      total += sec;
+      const day = el('div', 'j-day' + (dayKey(d) === tk ? ' today' : ''));
+      const bar = el('div', 'j-bar');
+      bar.style.height = Math.max(3, Math.round(sec / max * 52)) + 'px';
+      day.append(bar, el('span', 'j-lab', WD[d.getDay()]));
+      strip.appendChild(day);
+    });
+    document.getElementById('journalTotal').textContent = Math.round(total / 60) + ' мин';
+  }
+  paintJournal();
+
+  /* --- дзен-режим --- */
+  function openZen() {
+    if (zenOpen) return;
+    zenOpen = true;
+    zenEl.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    views.forEach(v => v.resize());
+    try {
+      const p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+    if (!running) startPause(); else syncAmbience();
+  }
+  function closeZen() {
+    if (!zenOpen) return;
+    zenOpen = false;
+    zenEl.classList.remove('open');
+    document.body.style.overflow = '';
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+  }
+  document.getElementById('zenBtn').addEventListener('click', openZen);
+  document.getElementById('zenExit').addEventListener('click', closeZen);
+  btnMain.addEventListener('click', startPause);
+  btnZen.addEventListener('click', startPause);
+  document.getElementById('breathReset').addEventListener('click', resetSession);
+  sndBtns.forEach(b => b.addEventListener('click', toggleSound));
+  rainBtns.forEach(b => b.addEventListener('click', toggleRain));
+  document.addEventListener('fullscreenchange', () => {
+    if (zenOpen && !document.fullscreenElement) closeZen();
+  });
+  addEventListener('keydown', e => {
+    if (!zenOpen) return;
+    if (e.key === 'Escape') closeZen();
+    else if (e.code === 'Space') { e.preventDefault(); startPause(); }
+    else if (['s', 'S', 'ы', 'Ы'].includes(e.key)) toggleSound();
+    else if (['r', 'R', 'к', 'К'].includes(e.key)) toggleRain();
+  });
+  paintSound(); paintRain();
+
+  /* --- главный цикл --- */
+  let last = performance.now();
+  const IV = a => `rgba(237,229,210,${a})`;
+  function draw(v, now) {
+    const { ctx, w, h } = v;
+    if (w < 20 || h < 20) return;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * .4;
+    const rMin = R * .34, rMax = R * .74;
+    const rot = now * .00004;
+    for (let i = 0; i < 60; i++) {
+      const a = rot + i / 60 * TAU - Math.PI / 2;
+      const len = i % 5 === 0 ? 10 : 5;
+      ctx.strokeStyle = IV(i % 5 === 0 ? .32 : .14);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+      ctx.lineTo(cx + Math.cos(a) * (R + len), cy + Math.sin(a) * (R + len));
+      ctx.stroke();
+    }
+    ctx.save();
+    ctx.setLineDash([2, 7]); ctx.lineDashOffset = -now * .006;
+    ctx.strokeStyle = IV(.16);
+    ctx.beginPath(); ctx.arc(cx, cy, rMin, 0, TAU); ctx.stroke();
+    ctx.lineDashOffset = now * .006;
+    ctx.beginPath(); ctx.arc(cx, cy, rMax, 0, TAU); ctx.stroke();
+    ctx.restore();
+    let r;
+    if (!started) {
+      r = rMin * (1 + .04 * Math.sin(now / 2000));
+    } else {
+      const ph = phases[phaseIdx];
+      const p = Math.min(1, phaseElapsed / ph.d);
+      const e = easeInOutSine(p);
+      r = ph.t === 'in' ? lerp(rMin, rMax, e)
+        : ph.t === 'out' ? lerp(rMax, rMin, e)
+        : ph.t === 'hold' ? rMax : rMin;
+    }
+    ctx.fillStyle = IV(.05);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = IV(.85); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    if (started) {
+      let passed = 0;
+      for (let k = 0; k < phaseIdx; k++) passed += phases[k].d;
+      passed += Math.min(phaseElapsed, phases[phaseIdx].d);
+      const cp = passed / cycleTotal();
+      if (cp > 0) {
+        const a0 = -Math.PI / 2, a1 = a0 + cp * TAU;
+        ctx.strokeStyle = 'rgba(214,164,78,.95)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, R + 16, a0, a1); ctx.stroke();
+        ctx.fillStyle = '#D6A44E';
+        ctx.beginPath(); ctx.arc(cx + Math.cos(a1) * (R + 16), cy + Math.sin(a1) * (R + 16), 3.5, 0, TAU); ctx.fill();
+      }
+    }
+  }
+  function tick(now) {
+    const dt = Math.min((now - last) / 1000, .1); last = now;
+    if (running && (mainVisible || zenOpen)) {
+      elapsed += dt; phaseElapsed += dt;
+      let guard = 0;
+      while (phaseElapsed >= phases[phaseIdx].d && guard++ < 8) {
+        phaseElapsed -= phases[phaseIdx].d;
+        phaseIdx = (phaseIdx + 1) % phases.length;
+        if (phaseIdx === 0) {
+          cycles++; cyclesEl.textContent = cycles;
+          journalAdd(cycleTotal());
+          if (cycles === 1) toast(B.ui.journalToast);
+        }
+        const ph = phases[phaseIdx];
+        setPhaseText(B.phaseNames[ph.t]);
+        cue(ph.t);
+      }
+      const c = Math.max(0, Math.ceil(phases[phaseIdx].d - phaseElapsed));
+      if (c !== lastCount) { lastCount = c; setCount(c); }
+      const m = Math.floor(elapsed / 60);
+      const ts = m + ':' + String(Math.floor(elapsed % 60)).padStart(2, '0');
+      if (ts !== lastTime) { lastTime = ts; timeEl.textContent = ts; }
+    }
+    if (!document.hidden) {
+      views.forEach(v => { if (v.visible && (v.cv !== zenCv || zenOpen)) draw(v, now); });
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ================= практики: аккордеон ================= */
+function initPractices() {
+  document.querySelectorAll('.practice').forEach(p => {
+    p.querySelector('.practice-head').addEventListener('click', () => {
+      const wasOpen = p.classList.contains('open');
+      document.querySelectorAll('.practice.open').forEach(o => o.classList.remove('open'));
+      if (!wasOpen) p.classList.add('open');
+    });
+  });
+}
+
+/* ================= чек-лист недели ================= */
+const LS_KEY = 'quiet-minute.v1';
+function initChecklist() {
+  const rows = [...document.querySelectorAll('.check-row')];
+  const fill = document.getElementById('checkFill');
+  const count = document.getElementById('checkCount');
+  const total = SITE.checklist.items.length;
+  let state;
+  try { state = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { state = []; }
+  if (!Array.isArray(state) || state.length !== total) state = SITE.checklist.items.map(() => false);
+  const save = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} };
+  const paint = () => {
+    rows.forEach((r, i) => r.classList.toggle('checked', !!state[i]));
+    const done = state.filter(Boolean).length;
+    fill.style.width = (done / total * 100) + '%';
+    count.textContent = `${done} / ${total}`;
+  };
+  rows.forEach((r, i) => r.addEventListener('click', () => { state[i] = !state[i]; save(); paint(); }));
+  const btn = document.getElementById('checkReset');
+  let armed = false, timer = null;
+  btn.addEventListener('click', () => {
+    if (!armed) {
+      armed = true; btn.classList.add('armed'); btn.textContent = SITE.checklist.resetConfirm;
+      timer = setTimeout(() => { armed = false; btn.classList.remove('armed'); btn.textContent = SITE.checklist.reset; }, 2600);
+    } else {
+      clearTimeout(timer);
+      state = SITE.checklist.items.map(() => false);
+      save(); paint();
+      armed = false; btn.classList.remove('armed'); btn.textContent = SITE.checklist.reset;
+      toast('Неделя начата заново');
+    }
+  });
+  paint();
+}
+
+/* ================= запуск ================= */
+initReveal();
+initNav();
+initProgress();
+initCursor();
+initHeroCanvas();
+initBreath();
+initPractices();
+initChecklist();
+</script>
+</body>
+</html>
